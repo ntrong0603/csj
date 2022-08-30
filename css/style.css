@@ -1,0 +1,193 @@
+html {
+  height: 100%;
+  font-size: 62.5%;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  background-color: #000000;
+}
+
+img {
+  max-width: 100%;
+}
+
+#checkbox-daynight {
+  -webkit-appearance: none;
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 5rem;
+  outline: none;
+  -webkit-transition: background-image 0.9s;
+  transition: background-image 0.9s;
+  -webkit-transition: -webkit-transform 0.9s;
+  transition: -webkit-transform 0.9s;
+  transition: transform 0.9s;
+  transition: transform 0.9s, -webkit-transform 0.9s;
+  cursor: pointer;
+}
+
+#checkbox-daynight.hide {
+  -webkit-transform: translateX(200%) !important;
+          transform: translateX(200%) !important;
+}
+
+#checkbox-daynight::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 5rem;
+  width: 5rem;
+  background-color: navy;
+  border-radius: 5rem;
+  -webkit-transition: all 0.9s;
+  transition: all 0.9s;
+  background-color: #f7ca33;
+  -webkit-box-shadow: 0px 0px 40px 15px #f7ca33;
+          box-shadow: 0px 0px 40px 15px #f7ca33;
+}
+
+#checkbox-daynight::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 5rem;
+  width: 5rem;
+  background-color: navy;
+  border-radius: 5rem;
+  -webkit-transition: all 0.9s;
+  transition: all 0.9s;
+  background-color: #ecf0f3;
+  -webkit-transform: translate(200%);
+          transform: translate(200%);
+  -webkit-box-shadow: 0px 0px 40px 15px #ecf0f3;
+          box-shadow: 0px 0px 40px 15px #ecf0f3;
+}
+
+#checkbox-daynight:checked::before {
+  -webkit-transform: translate(200%);
+          transform: translate(200%);
+  -webkit-transition: all 0.9s;
+  transition: all 0.9s;
+}
+
+#checkbox-daynight:checked::after {
+  -webkit-transform: translate(0%);
+          transform: translate(0%);
+  -webkit-transition: all 0.9s;
+  transition: all 0.9s;
+  background-color: #ecf0f3;
+}
+
+#logo {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  width: 5rem;
+  height: 5rem;
+}
+
+nav {
+  position: fixed;
+  top: 7.5rem;
+  left: 0;
+  background-color: #004a8dbf;
+  -webkit-transform: translateX(-25rem);
+          transform: translateX(-25rem);
+  -webkit-transition: -webkit-transform 0.9s;
+  transition: -webkit-transform 0.9s;
+  transition: transform 0.9s;
+  transition: transform 0.9s, -webkit-transform 0.9s;
+}
+
+nav ul {
+  width: 25rem;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+nav ul li {
+  list-style: none;
+  padding: 1rem 0.5rem;
+  cursor: pointer;
+}
+
+nav ul li:hover {
+  background-color: #004a8d;
+}
+
+nav ul li:not(:last-child) {
+  border-bottom: 1px solid gray;
+}
+
+nav #btn-nav {
+  position: absolute;
+  background-color: #004a8dbf;
+  height: 3.8rem;
+  width: 3.8rem;
+  top: 0;
+  right: -3.8rem;
+  cursor: pointer;
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 0.5rem;
+  border-left: 1px solid gray;
+}
+
+nav #btn-nav:hover {
+  background-color: #004a8d;
+}
+
+nav #btn-nav span {
+  width: 2.8rem;
+  height: 0.5rem;
+  background-color: wheat;
+  display: block;
+  margin-bottom: 0.3rem;
+  margin-top: 0.3rem;
+  border-radius: 0.5rem;
+}
+
+nav.show {
+  -webkit-transform: translateX(0);
+          transform: translateX(0);
+}
+
+nav.show #btn-nav span {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  translate: transform 0.9s;
+}
+
+nav.show #btn-nav span:nth-child(1) {
+  -webkit-transform: translate(-50%, -43%) rotate(45deg);
+          transform: translate(-50%, -43%) rotate(45deg);
+}
+
+nav.show #btn-nav span:nth-child(2) {
+  display: none;
+}
+
+nav.show #btn-nav span:nth-child(3) {
+  -webkit-transform: translate(-50%, -43%) rotate(-45deg);
+          transform: translate(-50%, -43%) rotate(-45deg);
+}
+/*# sourceMappingURL=style.css.map */

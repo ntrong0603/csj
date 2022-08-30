@@ -1,0 +1,446 @@
+﻿<krpano version="1.20.7" title="Virtual Tour">
+
+    <include url="skin/vtourskin.xml" />
+    <include url="%SWFPATH%/plugins/showtext.xml" />
+    <include url="%SWFPATH%/plugins/showimage.xml" />
+
+    <!-- customize skin settings: maps, gyro, webvr, thumbnails, tooltips, layout, design, ... -->
+    <skin_settings maps="false" maps_type="google" maps_bing_api_key="" maps_google_api_key="" maps_zoombuttons="false" maps_loadonfirstuse="true" gyro="true" gyro_keeplookingdirection="false" webvr="true" webvr_keeplookingdirection="true" webvr_prev_next_hotspots="true" autotour="false" littleplanetintro="false" followmousecontrol="false" title="true" thumbs="true" thumbs_width="120" thumbs_height="80" thumbs_padding="10" thumbs_crop="0|40|240|160" thumbs_opened="false" thumbs_text="false" thumbs_dragging="true" thumbs_onhoverscrolling="false" thumbs_scrollbuttons="false" thumbs_scrollindicator="false" thumbs_loop="false" tooltips_buttons="false" tooltips_thumbs="false" tooltips_hotspots="false" tooltips_mapspots="false" deeplinking="false" loadscene_flags="MERGE" loadscene_blend="OPENBLEND(0.5, 0.0, 0.75, 0.05, linear)" loadscene_blend_prev="SLIDEBLEND(0.5, 180, 0.75, linear)" loadscene_blend_next="SLIDEBLEND(0.5,   0, 0.75, linear)" loadingtext="loading..." layout_width="100%" layout_maxwidth="814" controlbar_width="-24" controlbar_height="40" controlbar_offset="20" controlbar_offset_closed="-40" controlbar_overlap.no-fractionalscaling="10" controlbar_overlap.fractionalscaling="0" design_skin_images="vtourskin.png" design_bgcolor="0x2D3E50" design_bgalpha="0.8" design_bgborder="0" design_bgroundedge="1" design_bgshadow="0 4 10 0x000000 0.3" design_thumbborder_bgborder="3 0xFFFFFF 1.0" design_thumbborder_padding="2" design_thumbborder_bgroundedge="0" design_text_css="color:#FFFFFF; font-family:Arial;" design_text_shadow="1" />
+
+    <autorotate enabled="true" waittime="1.0" accel="1.0" speed="5.0" horizon="0.0" tofov="120.0" />
+
+    <textstyle name="hotspottextstyle" font="Arial" fontsize="18" bold="true" padding="5 10" italic="false" textcolor="0xff9900" background="true" backgroundcolor="0x333333" border="true" bordercolor="0xff9900" alpha="1" blendmode="layer" effect="glow(0x000000,0.5,4,3);dropshadow(4,45,0x000000,4,0.66);" origin="cursor" edge="bottom" textalign="center" xoffset="0" yoffset="-5" noclip="true" showtime="0.1" fadetime="0.25" fadeintime="0.1" />
+
+    <action name="hotspot_animate">
+        if(loaded,
+        inc(frame,1,get(frames),0);
+        mul(ypos,frame,frameheight);
+        txtadd(crop,'0|',get(ypos),'|',get(framewidth),'|',get(frameheight));
+        delayedcall(0.03, hotspot_animate() );
+        );
+    </action>
+
+    <action name="do_crop_animation" args="framewidth, frameheight, framerate">
+        <!-- add attributes to the hotspot -->
+        registerattribute(xframes, calc((imagewidth / %1) BOR 0));
+        registerattribute(yframes, calc((imageheight / %2) BOR 0));
+        registerattribute(frames, calc(xframes * yframes));
+        registerattribute(frame, 0);
+
+        set(crop, '0|0|%1|%2');
+
+        setinterval(calc('crop_anim_' + name), calc(1.0 / %3),
+            if(loaded,
+                inc(frame);
+                if(frame GE frames, if(onlastframe !== null, onlastframe() ); set(frame,0); );
+                mod(xpos, frame, xframes);
+                div(ypos, frame, xframes);
+                Math.floor(ypos);
+                mul(xpos, %1);
+                mul(ypos, %2);
+                calc(crop, xpos + '|' + ypos + '|%1|%2');,
+                clearinterval(calc('crop_anim_' + name));
+            );
+        );
+        if(device.mobile, set(scale,0.5));
+    </action>
+
+    <action name="variables">
+        set(night,false);
+    </action>
+    <!--auto load-->
+    <events onmousedown="set(bt,0); " />
+
+    <action name="delayed_autoloadscene">
+    set(bt,%1);inc(bt,1);
+    delayedcall(timer_pause, 1, delayed_autoloadscene(get(bt),%2));
+    if(bt EQ %2, set(bt,0); nextscene(%2); );
+    </action>
+
+    <action name="nextscene">
+    set(ns, get(scene[get(xml.scene)].index) );
+    set(maxs, get(scene.count) );
+    inc(ns);
+    ifnot(ns EQ maxs, loadscene(get(scene[get(ns)].name ), null, MERGE, OPENBLEND(1.0, -0.5, 0.3, 0.8, linear));delayedcall(1,delayed_autoloadscene(0,%1)); );
+    </action>
+    <!--end-->
+    <!-- actiont set image cube -->
+    <action name="setimage">
+        set(preview.url, panos/%1.tiles/preview.jpg);
+        set(image.front.url, panos/%1.tiles/pano_f.jpg);
+        set(image.right.url, panos/%1.tiles/pano_r.jpg);
+        set(image.back.url, panos/%1.tiles/pano_b.jpg);
+        set(image.left.url, panos/%1.tiles/pano_l.jpg);
+        set(image.up.url, panos/%1.tiles/pano_u.jpg);
+        set(image.down.url, panos/%1.tiles/pano_d.jpg);
+        js(hiddenBtnDayNight());
+    </action>
+    <!--End Speaker-->
+    <plugin name="soundinterface" url="%SWFPATH%/plugins/soundinterface.swf" alturl="%SWFPATH%/plugins/soundinterface.js" rootpath="%CURRENTXML%" preload="true" keep="true" volume="0.3" />
+    <plugin name="snd" url="%SWFPATH%/images/soundonoff.png" keep="true" align="leftbottom" x="10" y="100" alpha="0.5" scale="1.0" onover="tween(alpha,1);" onout="tween(alpha,0.5);" crop="0|0|50|50" onclick="switch(soundinterface.mute); switch(crop, 0|0|50|50, 0|50|50|50);" />
+    <!--End Speaker-->
+    <!-- startup action - load the first scene -->
+    <action name="startup" autorun="onstart">
+        if(startscene === null OR !scene[get(startscene)], copy(startscene,scene[0].name); );
+        loadscene(get(startscene), null, MERGE);
+        if(startactions !== null, startactions() );
+        playsound(s1,music/001.mp3, 0,5);
+        delayed_autoloadscene(0,15);
+    </action>
+
+    <scene name="scene_csj-1" title="Overview(1)" onstart="update()" thumburl="panos/csj-1.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-1);
+        </action>
+        <view hlookat="-12.208" vlookat="-1.451" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="38.268" atv="7.456" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(3)',hotspottextstyle);" onclick="loadscene(scene_csj-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <!-- <scene name="scene_csj-2" title="Overview(2)" onstart="update()" thumburl="panos/csj-2.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-2);
+        </action>
+        <view hlookat="-1.551" vlookat="0.310" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-0.621" atv="15.339" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.5' zoom="true" onhover="showtext('Overview(3)',hotspottextstyle);" onclick="loadscene(scene_csj-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="-51.852" atv="-22.573" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene> -->
+
+    <scene name="scene_csj-3" title="Overview(3)" onstart="update()" thumburl="panos/csj-3.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-3);
+        </action>
+        <view hlookat="0.0" vlookat="0.0" fovtype="MFOV" fov="120" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-100.466" atv="48.809" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(4)',hotspottextstyle);" onclick="loadscene(scene_csj-4,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="-175.082" atv="-30.284" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-4" title="Overview(4)" onstart="update()" thumburl="panos/csj-4.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-4);
+        </action>
+        <view hlookat="-15.324" vlookat="-17.967" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="8.325" atv="-2.213" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(5)',hotspottextstyle);" onclick="loadscene(scene_csj-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="31.494" atv="-50.158" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(3)',hotspottextstyle);" onclick="loadscene(scene_csj-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-5" title="Overview(5)" onstart="update()" thumburl="panos/csj-5.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-5);
+        </action>
+        <view hlookat="-13.852" vlookat="4.032" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-54.431" atv="-1.025" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(6)',hotspottextstyle);" onclick="loadscene(scene_csj-6,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="12.786" atv="-1.225" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(4)',hotspottextstyle);" onclick="loadscene(scene_csj-4,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-6" title="Overview(6)" onstart="update()" thumburl="panos/csj-6.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-6);
+        </action>
+        <view hlookat="-53.129" vlookat="4.440" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-43.450" atv="-1.411" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(7)',hotspottextstyle);" onclick="loadscene(scene_csj-7,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="-6.080" atv="0.143" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(5)',hotspottextstyle);" onclick="loadscene(scene_csj-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-7" title="Overview(7)" onstart="update()" thumburl="panos/csj-7.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-7);
+        </action>
+        <view hlookat="-36.317" vlookat="7.462" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-93.012" atv="1.764" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(8)',hotspottextstyle);" onclick="loadscene(scene_csj-8,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="-22.572" atv="-0.828" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(6)',hotspottextstyle);" onclick="loadscene(scene_csj-6,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-8" title="Overview(8)" onstart="update()" thumburl="panos/csj-8.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-8);
+        </action>
+        <view hlookat="6.553" vlookat="-2.930" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-7.636" atv="-2.440" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(9)',hotspottextstyle);" onclick="loadscene(scene_csj-9,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="30.252" atv="-1.738" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(7)',hotspottextstyle);" onclick="loadscene(scene_csj-7,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_csj-9" title="Overview(9)" onstart="update()" thumburl="panos/csj-9.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+            setimage(csj-9);
+        </action>
+        <view hlookat="-395.382" vlookat="5.903" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview type="CUBESTRIP" />
+        <image type="CUBE"></image>
+        <hotspot name="spot1" ath="-69.210" atv="-10.500" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" ath="178.589" atv="5.918" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(8)',hotspottextstyle);" onclick="loadscene(scene_csj-8,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+    <!-- floor 8 -->
+    <scene name="scene_tang8-1" title="Tầng 8 - Phòng khách" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang8-1.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-18.250" vlookat="8.163" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang8-1.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang8-1.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-44.111" atv="7.554" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng bếp',hotspottextstyle);" onclick="loadscene(scene_tang8-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-136.476" atv="2.035" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang8-2" title="Tầng 8 - Phòng bếp" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang8-2.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="0.668" vlookat="5.272" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang8-2.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang8-2.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="46.546" atv="-2.465" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang8-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="67.785" atv="-2.657" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng ngủ',hotspottextstyle);" onclick="loadscene(scene_tang8-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang8-3" title="Tầng 8 - Phòng ngủ" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang8-3.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="3.350" vlookat="2.481" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang8-3.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang8-3.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="141.913" atv="0.759" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng vệ sinh',hotspottextstyle);" onclick="loadscene(scene_tang8-4,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-165.476" atv="-0.817" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng bếp',hotspottextstyle);" onclick="loadscene(scene_tang8-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang8-4" title="tang8-4" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang8-4.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="125.152" vlookat="10.990" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang8-4.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang8-4.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-113.853" atv="-18.570" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 8 - Phòng ngủ',hotspottextstyle);" onclick="loadscene(scene_tang8-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+    <!-- floor 12 -->
+    <scene name="scene_tang12-1" title="Tầng 12 - Phòng bếp" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-1.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="0.227" vlookat="7.546" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-1.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-1.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="15.574" atv="-2.425" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang12-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-153.738" atv="4.357" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang12-2" title="Tầng 12 - Phòng khách" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-2.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-7.513" vlookat="4.652" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-2.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-2.tiles/pano_%s.jpg" />
+        </image>
+
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-121.713" atv="0.841" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - phòng bếp',hotspottextstyle);" onclick="loadscene(scene_tang12-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot3" style="skin_hotspotstyle" ath="-41.629" atv="0.041" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng ngu (1)',hotspottextstyle);" onclick="loadscene(scene_tang12-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot4" style="skin_hotspotstyle" ath="129.476" atv="1.463" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng ngủ (2)',hotspottextstyle);" onclick="loadscene(scene_tang12-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+
+    </scene>
+
+    <scene name="scene_tang12-3" title="Tầng 12 - Phòng ngủ (1)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-3.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-18.297" vlookat="2.067" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-3.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-3.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-151.908" atv="4.771" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng về sinh (1)',hotspottextstyle);" onclick="loadscene(scene_tang12-4,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="93.469" atv="4.297" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang12-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang12-4" title="Tầng 12 - Phòng vệ sinh (1)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-4.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="130.443" vlookat="5.050" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-4.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-4.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="42.227" atv="-11.252" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng ngủ (1)',hotspottextstyle);" onclick="loadscene(scene_tang12-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang12-5" title="Tầng 12 - Phòng ngủ (2)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-5.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-1.854" vlookat="-0.827" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-5.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-5.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-113.860" atv="3.787" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng vệ sinh (2)',hotspottextstyle);" onclick="loadscene(scene_tang12-6,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-66.810" atv="2.343" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang12-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang12-6" title="Tầng 12 - Phòng vệ sinh (2)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang12-6.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-449.338" vlookat="0.151" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang12-6.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang12-6.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-19.416" atv="-1.099" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 12 - Phòng ngủ 2',hotspottextstyle);" onclick="loadscene(scene_tang12-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+    <!-- floor 13 -->
+    <scene name="scene_tang13-1" title="Tầng 13 - Phòng bếp" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-1.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="5.087" vlookat="1.861" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-1.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-1.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-6.889" atv="-1.223" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang13-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="167.343" atv="7.060" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Overview(1)',hotspottextstyle);" onclick="loadscene(scene_csj-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang13-2" title="Tầng 13 - Phòng khách" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-2.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-6.405" vlookat="1.034" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-2.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-2.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-82.208" atv="3.361" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng ngủ (1)',hotspottextstyle);" onclick="loadscene(scene_tang13-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="117.343" atv="5.658" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng ngủ (2)',hotspottextstyle);" onclick="loadscene(scene_tang13-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot3" style="skin_hotspotstyle" ath="-128.770" atv="2.216" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng bếp',hotspottextstyle);" onclick="loadscene(scene_tang13-1,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang13-3" title="Tầng 13 - Phòng ngủ (1)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-3.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-2.274" vlookat="2.481" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-3.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-3.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="105.501" atv="1.632" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng vệ sinh (1)',hotspottextstyle);" onclick="loadscene(scene_tang13-4,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="63.537" atv="1.348" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang13-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang13-4" title="Tầng 13 - Phòng vệ sinh (1)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-4.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-267.896" vlookat="-0.625" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-4.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-4.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="18.184" atv="-4.214" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng ngủ (1)',hotspottextstyle);" onclick="loadscene(scene_tang13-3,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang13-5" title="Tầng 13 - Phòng ngủ (2)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-5.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-3.401" vlookat="6.202" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-5.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-5.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="135.747" atv="0.466" url="skin/hotspot.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng vệ sinh (2)',hotspottextstyle);" onclick="loadscene(scene_tang13-6,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+        <hotspot name="spot2" style="skin_hotspotstyle" ath="-97.479" atv="6.494" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng khách',hotspottextstyle);" onclick="loadscene(scene_tang13-2,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+    <scene name="scene_tang13-6" title="Tầng 13 - Phòng vệ sinh (2)" onstart="js(hiddenBtnDayNight(true)); update()" thumburl="panos/tang13-6.tiles/thumb.jpg" lat="" lng="" heading="">
+        <action name="update">
+        </action>
+        <view hlookat="-93.670" vlookat="5.251" fovtype="MFOV" fov="120.000" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+
+        <preview url="panos/tang13-6.tiles/preview.jpg" />
+
+        <image>
+            <cube url="panos/tang13-6.tiles/pano_%s.jpg" />
+        </image>
+        <hotspot name="spot1" style="skin_hotspotstyle" ath="-11.975" atv="-0.992" url="skin/hotspot2.png" onloaded="do_crop_animation(128,112,4);" scale='0.4' zoom="true" onhover="showtext('Tầng 13 - Phòng ngủ (2)',hotspottextstyle);" onclick="loadscene(scene_tang13-5,null,MERGE,OPENBLEND(1.0, -0.5, 0.3, 0.8, linear))"/>
+
+    </scene>
+
+</krpano>
